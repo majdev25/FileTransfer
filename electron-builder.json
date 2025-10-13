@@ -1,0 +1,26 @@
+{
+  "appId": "",
+  "productName": "FileTransfer",
+  "directories": {
+    "buildResources": "build",
+    "output": "dist_electron"
+  },
+  "files": [
+    "vue/dist/**",
+    "electron/**",
+    "electron/preload/**",
+    "package.json"
+  ],
+  "mac": {
+    "target": ["dmg", "zip"],
+    "icon": "assets/icon.png"
+  },
+  "win": {
+    "target": ["nsis", "zip"],
+    "icon": "assets/icon.png"
+  },
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "icon": "assets/icon.png"
+  }
+}

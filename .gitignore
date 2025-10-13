@@ -1,0 +1,53 @@
+# Node modules
+node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory (test output)
+coverage/
+
+# Compiled output
+dist/
+build/
+dist_electron/
+release/
+out/
+*.asar
+
+# Vue build cache
+.cache/
+.vuepress/dist/
+.vue_cache/
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/editor folders
+.vscode/
+.idea/
+*.sw?
+
+# Installer packages
+*.exe
+*.dmg
+*.deb
+*.rpm
+*.msi
+*.AppImage
