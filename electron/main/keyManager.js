@@ -5,9 +5,9 @@ const path = require("path");
 const { app } = require("electron");
 
 const instanceId = process.env.INSTANCE || "default";
-const keyDir = path.join(app.getPath("userData"), `keys_${instanceId}`);
-const privateKeyPath = path.join(keyDir, "private.pem");
-const publicKeyPath = path.join(keyDir, "public.pem");
+var keyDir = null;
+var privateKeyPath = null;
+var publicKeyPath = null;
 var passphrase = "";
 
 /**
@@ -15,9 +15,11 @@ var passphrase = "";
  * @param {string} password
  * @returns {Object|null} Keys if passphrase correct, null otherwise
  */
-function ensureKeys(password) {
+function ensureKeys(password, USER_DATA_DIR) {
   passphrase = password;
-  console.log("Using passphrase:", passphrase);
+  keyDir = path.join(USER_DATA_DIR, `keys_${instanceId}`);
+  privateKeyPath = path.join(keyDir, "private.pem");
+  publicKeyPath = path.join(keyDir, "public.pem");
 
   if (!fs.existsSync(keyDir)) fs.mkdirSync(keyDir, { recursive: true });
 

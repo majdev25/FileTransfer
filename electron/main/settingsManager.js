@@ -5,14 +5,14 @@ const crypto = require("crypto");
 const { app } = require("electron");
 
 class Settings {
-  constructor(passphrase) {
+  constructor(passphrase, USER_DATA_DIR) {
     if (!passphrase)
       throw new Error("Passphrase is required for encrypted settings.");
 
     this.passphrase = passphrase;
 
     // Path to store settings file
-    const userDataPath = app.getPath("userData");
+    const userDataPath = USER_DATA_DIR;
     this.filePath = path.join(
       userDataPath,
       `settings_${process.env.INSTANCE || "default"}.json`

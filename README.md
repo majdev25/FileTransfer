@@ -164,6 +164,8 @@ Files are inside `electron/main/ipcs/`
 git clone https://github.com/maj-devs/fileTransfer.git
 cd fileTransfer
 npm install
+cd vue
+npm install
 ```
 
 ---

@@ -250,7 +250,7 @@ function register(ipcMain, deps = {}) {
           port: UDP_PORT_2,
           name: content.name || "Anonymous",
           friendId: friend.getFriendId(),
-          oldFriend: oldFriend.name || null,
+          oldFriend: oldFriend?.name || null,
         });
       }
     }

@@ -2,6 +2,7 @@
   <div
     class="d-flex flex-1 align-items-center justify-content-center w-100 flex-column gap-2 h-screen bg"
   >
+    <div class="reset-div clickable" @click="resetApp()">Reset app</div>
     <div class="d-flex flex-column gap-2 align-items-center">
       <div>
         <div style="margin-bottom: 10px" class="text-muted">Enter password</div>
@@ -38,6 +39,10 @@ async function enterPassword() {
   }
 }
 
+async function resetApp() {
+  const result = await window.api.invoke("app-delete-user-data", {});
+}
+
 onMounted(() => {});
 </script>
 
@@ -58,5 +63,16 @@ button {
   height: 50px;
   width: 400px;
   font-size: 20px;
+}
+
+.reset-div {
+  position: fixed;
+  right: 10px;
+  bottom: 10px;
+  color: #a1a1a1;
+}
+
+.reset-div:hover {
+  color: red;
 }
 </style>

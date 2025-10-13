@@ -189,10 +189,10 @@ class Friend extends EventEmitter {
  * Manages a collection of friends and persists them
  */
 class FriendsManager extends EventEmitter {
-  constructor(passphrase) {
+  constructor(passphrase, USER_DATA_DIR) {
     super();
     this.passphrase = passphrase;
-    const userDataPath = app.getPath("userData");
+    const userDataPath = USER_DATA_DIR;
     this.filePath = path.join(
       userDataPath,
       `friends_${process.env.INSTANCE || "default"}.json`
