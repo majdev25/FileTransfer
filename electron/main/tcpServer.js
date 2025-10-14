@@ -305,7 +305,7 @@ class TcpServer extends EventEmitter {
    */
   async sendAES(friend, buffer, opts = {}) {
     if (!friend.AES.con?.active || Date.now() > friend.AES.con.valid_until) {
-      console.log("[AES] Socket expired, creating new");
+      console.log("[AES] Socket not valid, creating new");
       await this.createAESSocket(friend, friend.getPort() + 1);
 
       // Wait 1 second to ensure handshake completes

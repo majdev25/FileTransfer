@@ -60,6 +60,7 @@ function selectFile() {
 async function sendFile(event) {
   const filePath = await window.api.invoke("app-select-file");
   if (!filePath) return; // user canceled
+  percent.value = 0;
 
   await window.api.invoke("files-send-file", {
     filePath,

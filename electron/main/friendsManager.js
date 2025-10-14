@@ -30,6 +30,12 @@ class Friend extends EventEmitter {
       _kekPromise: null,
       con: {},
     };
+    this.fileIn = {
+      meta: null,
+    };
+    this.fileOut = {
+      meta: null,
+    };
     this.lastSeen = Date.now();
     this.friendId = Friend.generateFriendId(publicKey);
     this.friendAccepted = false;

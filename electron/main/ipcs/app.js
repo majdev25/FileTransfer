@@ -1,4 +1,6 @@
 const { clipboard, dialog, shell } = require("electron");
+const fs = require("fs");
+const path = require("path");
 
 /**
  * App Utilities IPC Module
@@ -27,10 +29,20 @@ function register(ipcMain, deps) {
   // Show file in folder
   ipcMain.handle("app-show-file", async (event, { filePath }) => {
     try {
-      shell.showItemInFolder(filePath);
-      return true;
+      if (fs.existsSync(filePath)) {
+        const result = shell.showItemInFolder(filePath);
+        if (!result) {
+          // fallback: open folder itself
+          await shell.openPath(path.dirname(filePath));
+        }
+        return true;
+      } else {
+        console.error("File does not exist:", filePath);
+        return false;
+      }
     } catch (err) {
-      console.error("[app-show-file] Failed to show file:", err);
+      console.error("[app-show-file] Failed:", err);
+      await shell.openPath(path.dirname(filePath)); // fallback
       return false;
     }
   });

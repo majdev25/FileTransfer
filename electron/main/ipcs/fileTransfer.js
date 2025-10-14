@@ -42,7 +42,7 @@ function register(ipcMain, deps = {}) {
     const checksum = hash.digest("hex");
 
     // Store file info without the actual data
-    friend._fileToSend = { filePath, fileName, checksum, size };
+    friend.fileOut.meta = { filePath, fileName, checksum, size };
 
     const buf = Buffer.from(
       JSON.stringify({ fileName, size, checksum }),
@@ -57,7 +57,7 @@ function register(ipcMain, deps = {}) {
     const friend = friends.getFriend(friendId);
     if (!friend) return;
 
-    friend._fileToRecieve = { size, fileName, checksum };
+    friend.fileIn.meta = { size, fileName, checksum };
     const buf = Buffer.from(JSON.stringify({}), "utf8");
     tcpServer.sendAES(friend, buf, { type: "AES-ACCEPT-FILETRANSFER" });
   });
@@ -93,7 +93,7 @@ function register(ipcMain, deps = {}) {
   tcpServer.on("AES-ACCEPT-FILETRANSFER", async (payload, socket, friend) => {
     payload = JSON.parse(payload.toString("utf8"));
 
-    const { filePath, fileName, size, checksum } = friend._fileToSend;
+    const { filePath, fileName, size, checksum } = friend.fileOut.meta;
 
     if (!filePath) return; // sanity check
 
@@ -111,7 +111,7 @@ function register(ipcMain, deps = {}) {
     if (!receivedFilesStreams[friendId]) {
       const downloadDir =
         settings.getAllSettings().downloadPath || app.getPath("downloads");
-      const safeFileName = (friend._fileToRecieve.fileName || "FILE").replace(
+      const safeFileName = (friend.fileIn.meta.fileName || "FILE").replace(
         /[<>:"/\\|?*]+/g,
         "_"
       );
@@ -122,10 +122,21 @@ function register(ipcMain, deps = {}) {
     // Write chunk directly to file
     receivedFilesStreams[friendId].write(chunk);
 
+    const buff = Buffer.from(
+      JSON.stringify({ filename: friend.fileIn.meta.fileName }),
+      "utf8"
+    );
+    tcpServer.sendAES(friend, buff, { type: "AES-FILE-CHUNK-ACK" });
+
     mainWindow.webContents.send("files-receive-progress", {
       friendId,
       chunkNo,
     });
+  });
+
+  // Handles file chunk
+  tcpServer.on("AES-FILE-CHUNK-ACK", (buffer, socket, friend) => {
+    friend.fileOut._packetsInFlight = Math.max(0, friend._packetsInStream - 1);
   });
 
   // Handles file end and moves file to destination path
@@ -133,7 +144,7 @@ function register(ipcMain, deps = {}) {
     const friendId = friend.friendId;
     const downloadDir =
       settings.getAllSettings().downloadPath || app.getPath("downloads");
-    const safeFileName = (friend._fileToRecieve.fileName || "FILE").replace(
+    const safeFileName = (friend.fileIn.meta.fileName || "FILE").replace(
       /[<>:"/\\|?*]+/g,
       "_"
     );
@@ -146,7 +157,7 @@ function register(ipcMain, deps = {}) {
 
       const finalFilePath = path.join(
         downloadDir,
-        "ft-" + (friend._fileToRecieve.fileName || "FILE")
+        "ft-" + (friend.fileIn.meta.fileName || "FILE")
       );
 
       try {
@@ -156,18 +167,21 @@ function register(ipcMain, deps = {}) {
         for await (const chunk of fileStream) hash.update(chunk);
         const receivedChecksum = hash.digest("hex");
 
-        if (receivedChecksum !== friend._fileToRecieve.checksum) {
+        if (receivedChecksum !== friend.fileIn.meta.checksum) {
+          if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
           throw new Error("Checksum mismatch! File may be corrupted.");
         }
 
-        fs.renameSync(tempFilePath, finalFilePath); // move to final filename
+        // move to final destination
+        await fs.promises.copyFile(tempFilePath, finalFilePath);
+        await fs.promises.unlink(tempFilePath);
 
         mainWindow.webContents.send("file-transfer-status", {
           friendId,
           filePath: finalFilePath,
           friendName: friend.name,
           status: "OK",
-          fileName: friend._fileToRecieve.fileName,
+          fileName: friend.fileIn.meta.fileName,
         });
 
         const buf = Buffer.from(
@@ -185,7 +199,7 @@ function register(ipcMain, deps = {}) {
           filePath: finalFilePath,
           friendName: friend.name,
           status: "ERROR",
-          fileName: friend._fileToRecieve.fileName,
+          fileName: friend.fileIn.meta.fileName,
         });
 
         const buf = Buffer.from(
@@ -208,7 +222,7 @@ function register(ipcMain, deps = {}) {
       status: payload.status,
       msg: payload.msg,
     });
-    if (friend._fileToSend) delete friend._fileToSend;
+    if (friend.fileOut.meta) delete friend.fileOut.meta;
   });
 
   // ------------------- Helper Functions -------------------
@@ -221,16 +235,40 @@ function register(ipcMain, deps = {}) {
    * @param {String} checksum
    */
   async function sendFile(friend, filePath, fileName, size, checksum) {
+    const MAX_IN_FLIGHT = 10;
+    const MAX_FAILED_ATTEMPTS = 1000;
+
     const chunkSize = 64 * 1024; // 64KB
     const stream = fs.createReadStream(filePath, { highWaterMark: chunkSize });
     let chunkNo = 0;
     let sentBytes = 0;
+    friend.fileOut._packetsInFlight = 0;
 
     try {
       for await (const chunk of stream) {
         const chunkNoBuf = Buffer.alloc(4);
         chunkNoBuf.writeUInt32BE(chunkNo, 0);
         const buf = Buffer.concat([chunkNoBuf, chunk]);
+
+        // Wait for packets confirmation
+        while (friend.fileOut._packetsInFlight > MAX_IN_FLIGHT) {
+          friend.fileOut._failedAttempts =
+            (friend.fileOut._failedAttempts || 0) + 1;
+          if (friend.fileOut._failedAttempts > MAX_FAILED_ATTEMPTS) {
+            mainWindow.webContents.send("file-transfer-ack", {
+              status: 2,
+              msg: `File transfer stalled: no ACKs received after ${
+                MAX_WAIT_ATTEMPTS * 10
+              }ms`,
+            });
+            throw new Error(
+              `File transfer stalled: no ACKs received after ${
+                MAX_WAIT_ATTEMPTS * 10
+              }ms`
+            );
+          }
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
 
         // Wait for the socket to be ready before sending next chunk
         await new Promise((resolve) => {
@@ -247,6 +285,7 @@ function register(ipcMain, deps = {}) {
         });
 
         chunkNo++;
+        friend.fileOut._packetsInFlight += 1;
       }
 
       const meta = Buffer.from(
