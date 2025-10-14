@@ -22,10 +22,8 @@ Send and receive files between devices over local networks with ease.
 
 Get the latest release of **FileTransfer** for your OS:
 
-> ⚠️ Available soon.
-
-- **Windows:** [Download EXE](#)
-- **macOS:** [Download DMG](#)
+- **Windows:** [Download EXE](https://sourceforge.net/projects/filetransfer25/files/)
+- **macOS:** [Download DMG](https://sourceforge.net/projects/filetransfer25/files/)
 
 ---
 
