@@ -33,11 +33,14 @@
       </div>
     </div>
     <div>
-      <div class="d-flex gap-2 align-items-center p-10">
-        <FriendLogo :name="settings.name" />
-        <div class="key clickable" @click="copyMyPublicKey">
-          {{ publicKeyDisplay }} (Click to copy)
+      <div class="d-flex align-items-center justify-content-between p-10">
+        <div class="d-flex gap-2 align-items-center">
+          <FriendLogo :name="settings.name" />
+          <div class="key clickable" @click="copyMyPublicKey">
+            {{ publicKeyDisplay }} (Click to copy)
+          </div>
         </div>
+        <div class="text-muted" style="font-size: 13px">v{{ version }}</div>
       </div>
       <div class="main-menu">
         <router-link to="/friends" class="item" active-class="active">
@@ -69,6 +72,7 @@ const router = useRouter();
 const fullPublicKey = ref("");
 const settings = ref({ downloadPath: "", name: "" });
 const notifications = ref([]);
+const version = ref("");
 
 const publicKeyDisplay = computed(() => {
   if (!fullPublicKey.value) return "";
@@ -103,7 +107,9 @@ async function updateSetting() {
   settings.value = await window.api.invoke("app-get-settings", {});
 }
 
-onMounted(() => {
+onMounted(async () => {
+  version.value = await window.api.invoke("app-get-version", {});
+
   window.api.on("confirm-incoming-friend", (data) => {
     router.push({
       path: "/confirm-incoming-friend",

@@ -1,4 +1,4 @@
-const { clipboard, dialog, shell } = require("electron");
+const { clipboard, dialog, shell, app } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
@@ -68,6 +68,17 @@ function register(ipcMain, deps) {
   // Returns all stored application settings
   ipcMain.handle("app-get-settings", async (event, {}) => {
     return settings.getAllSettings();
+  });
+
+  ipcMain.handle("app-get-version", async (event, {}) => {
+    try {
+      const packagePath = path.join(app.getAppPath(), "../package.json");
+      const data = JSON.parse(fs.readFileSync(packagePath, "utf8"));
+      return data.version || app.getVersion();
+    } catch (err) {
+      console.error("Failed to read version:", err);
+      return app.getVersion();
+    }
   });
 
   // Updates application settings and notifies renderer
