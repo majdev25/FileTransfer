@@ -35,6 +35,7 @@ class Friend extends EventEmitter {
     };
     this.fileOut = {
       meta: null,
+      _packetsInFlight: 0,
     };
     this.lastSeen = Date.now();
     this.friendId = Friend.generateFriendId(publicKey);

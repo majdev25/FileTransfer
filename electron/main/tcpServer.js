@@ -157,7 +157,7 @@ class TcpServer extends EventEmitter {
    */
   attachAESSocketHandlers(socket) {
     this.attachJSONStreamHandler(socket, (message, sock) => {
-      console.log("[AES] Encrypted message received:", message.type);
+      //console.log("[AES] Encrypted message received:", message.type);
       try {
         const friend = this.friends.getFriend(message.friendId);
         if (!friend) return;
@@ -325,7 +325,7 @@ class TcpServer extends EventEmitter {
         payload: { ...payload, ...(opts.meta || {}) },
       }) + "\n";
 
-    console.log("[TCP] Sent encrypted message: " + opts.type);
+    //console.log("[TCP] Sent encrypted message: " + opts.type);
     const canWrite = friend.AES.con.socket.write(dataToSend);
 
     // Prevent ENOBUF error by listening for drain

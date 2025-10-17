@@ -78,7 +78,7 @@ async function testCon() {
   status.value = -1; // testing
 
   for (let i = 0; i < maxRetries; i++) {
-    if (status.value === 0) break; // stop if already OK
+    if (status.value > 0) break; // stop if already OK
 
     console.log(`Testing connection attempt ${i + 1}...`);
     await window.api.invoke("friends-test-connection", {
@@ -86,7 +86,7 @@ async function testCon() {
     });
 
     // wait 5 seconds before next attempt, unless status becomes 0
-    if (i < maxRetries - 1 && status.value !== 0) {
+    if (i < maxRetries - 1 && status.value < 0) {
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }

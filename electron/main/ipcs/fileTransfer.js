@@ -122,11 +122,28 @@ function register(ipcMain, deps = {}) {
     // Write chunk directly to file
     receivedFilesStreams[friendId].write(chunk);
 
-    const buff = Buffer.from(
-      JSON.stringify({ filename: friend.fileIn.meta.fileName }),
-      "utf8"
-    );
-    tcpServer.sendAES(friend, buff, { type: "AES-FILE-CHUNK-ACK" });
+    friend.fileIn._packetsReceived = (_packetsReceived || 0) + 1;
+    const BATCH_SIZE = 10;
+
+    if (
+      friend.fileIn._packetsReceived - (friend.fileIn._lastAckedPacket || 0) >=
+      BATCH_SIZE
+    ) {
+      const ackCount =
+        friend.fileIn._packetsReceived - (friend.fileIn._lastAckedPacket || 0);
+
+      const buff = Buffer.from(
+        JSON.stringify({
+          filename: friend.fileIn.meta.fileName,
+          packtsNo: ackCount,
+        }),
+        "utf8"
+      );
+      tcpServer.sendAES(friend, buff, { type: "AES-FILE-CHUNK-ACK" });
+
+      // Update last acknowledged packet
+      friend.fileIn._lastAckedPacket = friend.fileIn._packetsReceived;
+    }
 
     mainWindow.webContents.send("files-receive-progress", {
       friendId,
@@ -136,7 +153,12 @@ function register(ipcMain, deps = {}) {
 
   // Handles file chunk
   tcpServer.on("AES-FILE-CHUNK-ACK", (buffer, socket, friend) => {
-    friend.fileOut._packetsInFlight = Math.max(0, friend._packetsInStream - 1);
+    payload = JSON.parse(payload.toString("utf8"));
+    const packets = Number(payload.packtsNo) || 0;
+    friend.fileOut._packetsInFlight = Math.max(
+      0,
+      friend.fileOut._packetsInFlight - packets
+    );
   });
 
   // Handles file end and moves file to destination path
@@ -236,10 +258,10 @@ function register(ipcMain, deps = {}) {
    */
   async function sendFile(friend, filePath, fileName, size, checksum) {
     friend.sendingFile = true;
-    const MAX_IN_FLIGHT = 3;
+    const MAX_IN_FLIGHT = 100;
     const MAX_FAILED_ATTEMPTS = 1000;
 
-    const chunkSize = 32 * 1024;
+    const chunkSize = 64 * 1024;
     const stream = fs.createReadStream(filePath, { highWaterMark: chunkSize });
     let chunkNo = 0;
     let sentBytes = 0;
@@ -252,6 +274,7 @@ function register(ipcMain, deps = {}) {
         const buf = Buffer.concat([chunkNoBuf, chunk]);
 
         // Wait for packets confirmation
+        console.log(friend.fileOut._packetsInFlight, MAX_IN_FLIGHT);
         while (friend.fileOut._packetsInFlight > MAX_IN_FLIGHT) {
           friend.fileOut._failedAttempts =
             (friend.fileOut._failedAttempts || 0) + 1;
@@ -259,17 +282,19 @@ function register(ipcMain, deps = {}) {
             mainWindow.webContents.send("file-transfer-ack", {
               status: 2,
               msg: `File transfer stalled: no ACKs received after ${
-                MAX_WAIT_ATTEMPTS * 10
+                MAX_FAILED_ATTEMPTS * 10
               }ms`,
             });
             throw new Error(
               `File transfer stalled: no ACKs received after ${
-                MAX_WAIT_ATTEMPTS * 10
+                MAX_FAILED_ATTEMPTS * 10
               }ms`
             );
           }
-          await new Promise((resolve) => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
+        // Reset failedAttempts once we're below MAX_IN_FLIGHT
+        friend.fileOut._failedAttempts = 0;
 
         // Wait for the socket to be ready
         let sent = false;
