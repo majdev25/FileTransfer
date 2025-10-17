@@ -1,6 +1,6 @@
 {
   "name": "FileTransfer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "electron/main.js",
   "scripts": {
     "dev": "cross-env NODE_ENV=development concurrently \"npm run dev --prefix vue\" \"wait-on http://localhost:5173 && electron ./electron/main.js\"",
