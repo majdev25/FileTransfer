@@ -270,14 +270,19 @@ function register(ipcMain, deps = {}) {
           await new Promise((resolve) => setTimeout(resolve, 10));
         }
 
-        // Wait for the socket to be ready before sending next chunk
-        await new Promise((resolve) => {
+        // Wait for the socket to be ready
+        let sent = false;
+        while (!sent) {
           const canSend = tcpServer.sendAES(friend, buf, {
             type: "AES-FILE-CHUNK",
           });
-          if (canSend) resolve();
-          else tcpServer.once("drain", resolve);
-        });
+          if (canSend) {
+            sent = true; // chunk successfully queued
+          } else {
+            // wait for the socket to drain, then retry
+            await new Promise((resolve) => tcpServer.once("drain", resolve));
+          }
+        }
 
         sentBytes += chunk.length;
         mainWindow.webContents.send("files-trans-percent", {

@@ -274,6 +274,7 @@ class TcpServer extends EventEmitter {
       this.destroySocket(friend);
     });
     socket.on("error", (err) => {
+      console.error("[TCP] Socket error:", err);
       this.destroySocket(friend);
     });
 
