@@ -330,9 +330,13 @@ class TcpServer extends EventEmitter {
 
     // Prevent ENOBUF error by listening for drain
     if (!canWrite) {
-      friend.AES.con.socket.once("drain", () => {
-        this.emit("drain", friend);
-      });
+      if (!friend.AES.con.socket._waitingDrain) {
+        friend.AES.con.socket._waitingDrain = true;
+        friend.AES.con.socket.once("drain", () => {
+          friend.AES.con.socket._waitingDrain = false;
+          this.emit("drain", friend);
+        });
+      }
     }
 
     return canWrite; // true if write succeeded, false if buffered
