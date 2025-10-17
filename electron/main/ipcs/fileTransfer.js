@@ -235,10 +235,11 @@ function register(ipcMain, deps = {}) {
    * @param {String} checksum
    */
   async function sendFile(friend, filePath, fileName, size, checksum) {
-    const MAX_IN_FLIGHT = 10;
+    friend.sendingFile = true;
+    const MAX_IN_FLIGHT = 3;
     const MAX_FAILED_ATTEMPTS = 1000;
 
-    const chunkSize = 64 * 1024; // 64KB
+    const chunkSize = 32 * 1024;
     const stream = fs.createReadStream(filePath, { highWaterMark: chunkSize });
     let chunkNo = 0;
     let sentBytes = 0;
@@ -299,7 +300,9 @@ function register(ipcMain, deps = {}) {
       );
       const endMarker = Buffer.concat([Buffer.alloc(4, 0xff), meta]);
       tcpServer.sendAES(friend, endMarker, { type: "AES-FILE-END" });
+      friend.sendingFile = false;
     } catch (err) {
+      friend.sendingFile = false;
       console.error(
         `[sendFile] Error sending file to ${friend.friendId}:`,
         err

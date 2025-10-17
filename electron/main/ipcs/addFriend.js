@@ -182,6 +182,7 @@ function register(ipcMain, deps = {}) {
   ipcMain.handle("friends-test-connection", async (event, { friendId }) => {
     const friend = friends.getFriend(friendId);
     if (!friend) return;
+    if (friend.sendingFile) return;
 
     console.log("[TCP] Testing connection to friend", friendId);
 
