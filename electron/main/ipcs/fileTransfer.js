@@ -122,7 +122,7 @@ function register(ipcMain, deps = {}) {
     // Write chunk directly to file
     receivedFilesStreams[friendId].write(chunk);
 
-    friend.fileIn._packetsReceived = (_packetsReceived || 0) + 1;
+    friend.fileIn._packetsReceived = (friend.fileIn._packetsReceived || 0) + 1;
     const BATCH_SIZE = 10;
 
     if (
@@ -152,7 +152,7 @@ function register(ipcMain, deps = {}) {
   });
 
   // Handles file chunk
-  tcpServer.on("AES-FILE-CHUNK-ACK", (buffer, socket, friend) => {
+  tcpServer.on("AES-FILE-CHUNK-ACK", (payload, socket, friend) => {
     payload = JSON.parse(payload.toString("utf8"));
     const packets = Number(payload.packtsNo) || 0;
     friend.fileOut._packetsInFlight = Math.max(
