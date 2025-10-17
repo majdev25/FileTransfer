@@ -91,7 +91,7 @@ async function testCon() {
     }
   }
 
-  if (status.value !== 0) {
+  if (status.value < 0) {
     status.value = -2;
   }
 }

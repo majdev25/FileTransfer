@@ -274,7 +274,6 @@ function register(ipcMain, deps = {}) {
         const buf = Buffer.concat([chunkNoBuf, chunk]);
 
         // Wait for packets confirmation
-        console.log(friend.fileOut._packetsInFlight, MAX_IN_FLIGHT);
         while (friend.fileOut._packetsInFlight > MAX_IN_FLIGHT) {
           friend.fileOut._failedAttempts =
             (friend.fileOut._failedAttempts || 0) + 1;
