@@ -261,7 +261,7 @@ function register(ipcMain, deps = {}) {
     const MAX_IN_FLIGHT = 100;
     const MAX_FAILED_ATTEMPTS = 1000;
 
-    const chunkSize = 64 * 1024;
+    const chunkSize = 128 * 1024;
     const stream = fs.createReadStream(filePath, { highWaterMark: chunkSize });
     let chunkNo = 0;
     let sentBytes = 0;
